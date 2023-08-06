@@ -30,7 +30,6 @@ export const authOptions: NextAuthOptions = {
       clientSecret: getGoogleCredentials().clientSecret,
     }),
   ],
-  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async jwt({ token, user }) {
       const dbUser = (await db.get(`user:${token.id}`)) as User | null;
@@ -41,7 +40,7 @@ export const authOptions: NextAuthOptions = {
       return {
         id: dbUser.id,
         name: dbUser.name,
-        email: dbUser.image,
+        email: dbUser.email,
         picture: dbUser.image,
       };
     },
