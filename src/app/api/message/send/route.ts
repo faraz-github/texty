@@ -1,6 +1,8 @@
 import { fetchRedis } from "@/helpers/redis";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { pusherServer } from "@/lib/pusher";
+import { toPusherKey } from "@/lib/utils";
 import { Message, messageValidator } from "@/lib/validations/message";
 import { nanoid } from "nanoid";
 import { getServerSession } from "next-auth";
@@ -36,7 +38,7 @@ export async function POST(req: Request) {
 
     const rawSender = (await fetchRedis(
       "get",
-      "user:${session.user.id}"
+      `user:${session.user.id}`
     )) as string;
     const sender = JSON.parse(rawSender) as User;
 
@@ -54,12 +56,29 @@ export async function POST(req: Request) {
     // this is for future to add conditions like max length of text to be 2000
     const message = messageValidator.parse(messageData);
 
+    // all valid
+
+    // Pusher - trigger new message current open chat
+    pusherServer.trigger(
+      toPusherKey(`chat:${chatId}`),
+      "incoming_message",
+      message
+    );
+
+    // Pusher - trigger new message in any chat
+    pusherServer.trigger(toPusherKey(`user:${friendId}:chats`), "new_message", {
+      ...message,
+      senderImg: sender.image,
+      senderName: sender.name,
+    });
+
     await db.zadd(`chat:${chatId}:messages`, {
       score: timestamp,
       member: JSON.stringify(message),
     });
     return new Response("OK");
   } catch (error) {
+
     if (error instanceof Error) {
       return new Response(error.message, { status: 500 });
     }

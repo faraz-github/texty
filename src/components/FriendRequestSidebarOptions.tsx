@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { User } from "lucide-react";
+import { pusherClient } from "@/lib/pusher";
+import { toPusherKey } from "@/lib/utils";
 
 interface FriendRequestSidebarOptionsProps {
   sessionId: string;
@@ -16,6 +18,28 @@ const FriendRequestSidebarOptions = ({
   const [unseenRequestCount, setUnseenRequestCount] = useState<number>(
     initialUnseenRequestCount
   );
+
+  // Pusher - subscribe new friend request
+  useEffect(() => {
+    // pusherClient.subscribe(`user:${sessionId}:incoming_friend_requests`); pusher does not support colon : so using toPusherKey
+    pusherClient.subscribe(
+      toPusherKey(`user:${sessionId}:incoming_friend_requests`)
+    ); // Listening
+
+    const friendRequestHandler = () => {
+      setUnseenRequestCount((prev) => prev + 1);
+    };
+
+    pusherClient.bind("incoming_friend_requests", friendRequestHandler); // Binding
+
+    return () => {
+      // Cleanup
+      pusherClient.unsubscribe(
+        toPusherKey(`user:${sessionId}:incoming_friend_requests`)
+      );
+      pusherClient.unbind("incoming_friend_requests", friendRequestHandler);
+    };
+  }, [sessionId]);
 
   return (
     <Link

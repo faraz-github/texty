@@ -17,6 +17,7 @@ const ChatInput: FC<ChatInputProps> = ({ chatPartner, chatId }) => {
   const [input, setInput] = useState<string>("");
 
   const sendMessage = async () => {
+    if (!input) return;
     setIsLoading(true);
     try {
       // await new Promise((resolve) => setTimeout(resolve, 1000)); // Temp mock for api call
@@ -26,7 +27,7 @@ const ChatInput: FC<ChatInputProps> = ({ chatPartner, chatId }) => {
       });
       setInput("");
       textareaRef.current?.focus();
-    } catch {
+    } catch (error) {
       toast.error("Something went wrong. Please try again later.");
     } finally {
       setIsLoading(false);

@@ -1,9 +1,11 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Check, UserPlus, X } from "lucide-react";
+import { pusherClient } from "@/lib/pusher";
+import { toPusherKey } from "@/lib/utils";
 
 interface FriendRequestsProps {
   incomingFriendRequests: IncomingFriendRequest[];
@@ -19,6 +21,31 @@ const FriendRequests = ({
   const [friendRequests, setFriendRequests] = useState<IncomingFriendRequest[]>(
     incomingFriendRequests
   );
+
+  // Pusher - subscribe new friend request
+  useEffect(() => {
+    // pusherClient.subscribe(`user:${sessionId}:incoming_friend_requests`); pusher does not support colon : so using toPusherKey
+    pusherClient.subscribe(
+      toPusherKey(`user:${sessionId}:incoming_friend_requests`)
+    ); // Listening
+
+    const friendRequestHandler = ({
+      senderId,
+      senderEmail,
+    }: IncomingFriendRequest) => {
+      setFriendRequests((prev) => [...prev, { senderId, senderEmail }]);
+    };
+
+    pusherClient.bind("incoming_friend_requests", friendRequestHandler); // Binding
+
+    return () => {
+      // Cleanup
+      pusherClient.unsubscribe(
+        toPusherKey(`user:${sessionId}:incoming_friend_requests`)
+      );
+      pusherClient.unbind("incoming_friend_requests", friendRequestHandler); 
+    };
+  }, [sessionId]);
 
   const acceptFriend = async (senderId: string) => {
     // From the current friend requests in the database accept one
@@ -63,7 +90,7 @@ const FriendRequests = ({
               <Check className="font-semibold text-white w-3/4 h-3/4" />
             </button>
             <button
-            onClick={() => denyFriend(request.senderId)}
+              onClick={() => denyFriend(request.senderId)}
               aria-label="deny friend"
               className="w-8 h-8 bg-red-600 hover:bg-red-700 grid place-items-center rounded-full transition hover:shadow-md"
             >
