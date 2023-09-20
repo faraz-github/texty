@@ -20,11 +20,16 @@ const SidebarChatList: FC<SidebarChatListProps> = ({ sessionId, friends }) => {
   const router = useRouter();
   const pathname = usePathname();
   const [unseenMessages, setUnseenMessages] = useState<Message[]>([]);
+  const [activeChats, setActiveChats] = useState<User[]>(friends);
 
   // Pusher - subscribe new unseen chat and unseen friend request
   useEffect(() => {
     pusherClient.subscribe(toPusherKey(`user:${sessionId}:chats`)); // Listening
     pusherClient.subscribe(toPusherKey(`user:${sessionId}:friends`)); // Listening
+
+    const newFriendHandler = (newFriend: User) => {
+      setActiveChats((prev) => [...prev, newFriend]);
+    };
 
     const chatHandler = (message: ExtendedMessage) => {
       // Only notify if we are not inside that chat
@@ -46,9 +51,6 @@ const SidebarChatList: FC<SidebarChatListProps> = ({ sessionId, friends }) => {
       ));
 
       setUnseenMessages((prev) => [...prev, message]);
-    };
-    const newFriendHandler = () => {
-      router.refresh(); //without hard reload
     };
 
     pusherClient.bind("new_message", chatHandler); // Binding

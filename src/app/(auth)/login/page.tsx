@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button";
 
 type Props = {};
 
-const page = (props: Props) => {
+const Page = (props: Props) => {
   async function loginWithGoogle() {
     setIsLoading(true);
     try {
@@ -75,4 +75,4 @@ const page = (props: Props) => {
   );
 };
 
-export default page;
+export default Page;
